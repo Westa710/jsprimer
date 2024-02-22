@@ -1,20 +1,64 @@
-console.log("index.js:loaded");
-
-const userId = "js-primer-example";
+async function main() {
+  try {
+    const userId = getUserId();
+    const userInfo = await fetchUserInfo(userId);
+    const view = createView(userInfo);
+    displayView(view);
+  } catch (error) {
+    console.error(`エラーが発生しました (${error})`);
+  }
+}
 
 function fetchUserInfo(userId) {
-  fetch(`https://api.github.com/users/${encodeURIComponent(userId)}`)
+  return fetch(`https://api.github.com/users/${encodeURIComponent(userId)}`)
     .then((response) => {
       console.log(response.status);
       if (!response.ok) {
-        console.error("エラーレスポンス", response);
+        return Promise.reject(new Error(`${response.status}: ${response.statusText}`));
       } else {
-        return response.json().then((userInfo) => {
-          console.log(userInfo);
-        });
+        return response.json();
       }
     })
     .catch((error) => {
       console.log(error);
     });
+}
+
+function getUserId() {
+  return document.getElementById("userId").value;
+}
+
+function createView(userInfo) {
+  const view = escapeHTML`
+    <h4>${userInfo.name}(@${userInfo.login})</h4>
+    <img src="${userInfo.avatar_url}" alt="${userInfo.login}" height="100">
+    <dl>
+      <dt>Location</dt>
+      <dd>${userInfo.location}</dd>
+      <dt>Repositories</dt>
+      <dd>${userInfo.public_repos}</dd>
+    </dl>
+  `;
+
+  return view;
+}
+
+function displayView(view) {
+  const result = document.getElementById("result");
+  result.innerHTML = view;
+}
+
+function escapeHTML(strings, ...values) {
+  return strings.reduce((result, str, i) => {
+    const value = values[i - 1];
+    if (typeof value === "string") {
+      return result + escapeSpecialChars(value) + str;
+    } else {
+      return result + String(value) + str;
+    }
+  });
+}
+
+function escapeSpecialChars(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
